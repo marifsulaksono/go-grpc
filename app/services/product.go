@@ -56,3 +56,20 @@ func (p *ProductService) GetProducts(ctx context.Context, pageParam *pbProduct.P
 
 	return listProducts, nil
 }
+
+func (p *ProductService) GetProduct(ctx context.Context, id *pbProduct.Id) (*pbProduct.Product, error) {
+	row := p.DB.Table("products AS p").Joins("LEFT JOIN categories AS c ON c.id = p.category_id").
+		Select("p.id", "p.name", "p.price", "p.stock", "c.id AS category_id", "c.name").
+		Where("p.id = ?", id.GetId()).Row()
+
+	var product pbProduct.Product
+	var category pbProduct.Category
+
+	if err := row.Scan(&product.Id, &product.Name, &product.Price, &product.Stock, &category.Id, &category.Name); err != nil {
+		log.Fatalf("Failed to get row data : %v", err.Error())
+	}
+
+	product.Category = &category
+
+	return &product, nil
+}

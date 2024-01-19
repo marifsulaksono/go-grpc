@@ -66,7 +66,7 @@ func (p *ProductService) GetProduct(ctx context.Context, id *pbProduct.Id) (*pbP
 	var category pbProduct.Category
 
 	if err := row.Scan(&product.Id, &product.Name, &product.Price, &product.Stock, &category.Id, &category.Name); err != nil {
-		log.Fatalf("Failed to get row data : %v", err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	product.Category = &category
@@ -153,5 +153,16 @@ func (p *ProductService) UpdateProduct(ctx context.Context, product *pbProduct.P
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	return &response, nil
+}
+
+func (p *ProductService) DeleteProduct(ctx context.Context, id *pbProduct.Id) (*pbProduct.Status, error) {
+	var response pbProduct.Status
+
+	if err := p.DB.Table("products").Where("id = ?", id.GetId()).Delete(nil).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response.Status = "success"
 	return &response, nil
 }

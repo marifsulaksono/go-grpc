@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 
+	"go-grpc/app/config"
 	"go-grpc/app/services"
 	pbProduct "go-grpc/protobuf/product"
 
@@ -19,7 +20,8 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	productService := services.ProductService{}
+	db := config.Connect()
+	productService := services.ProductService{DB: db}
 	pbProduct.RegisterProductServiceServer(grpcServer, &productService)
 	log.Printf("Server started at %v", netListener.Addr())
 	if err := grpcServer.Serve(netListener); err != nil {

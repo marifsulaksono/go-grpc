@@ -114,3 +114,44 @@ func (p *ProductService) CreateProduct(ctx context.Context, product *pbProduct.P
 
 	return &response, nil
 }
+
+func (p *ProductService) UpdateProduct(ctx context.Context, product *pbProduct.Product) (*pbProduct.Status, error) {
+	var response pbProduct.Status
+	err := p.DB.Transaction(func(tx *gorm.DB) error {
+		category := pbProduct.Category{
+			Id:   0,
+			Name: product.GetCategory().GetName(),
+		}
+
+		if err := tx.Table("categories").Where("name = ?", category.GetName()).FirstOrCreate(&category).Error; err != nil {
+			return err
+		}
+
+		newProduct := struct {
+			Id         uint64
+			Name       string
+			Price      float64
+			Stock      uint32
+			CategoryId uint32
+		}{
+			Id:         product.GetId(),
+			Name:       product.GetName(),
+			Price:      product.GetPrice(),
+			Stock:      product.GetStock(),
+			CategoryId: category.GetId(),
+		}
+
+		if err := tx.Table("products").Where("id = ?", newProduct.Id).Updates(&newProduct).Error; err != nil {
+			return err
+		}
+
+		response.Status = "success"
+		return nil
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &response, nil
+}
